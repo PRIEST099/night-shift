@@ -98,10 +98,9 @@ describe('dashboard data and bundle', () => {
     expect(typeof app.ui?.pages[0]?.['icon']).toBe('string')
   })
 
-  test('the built bundle imports the SDK and only the externals; react is not bundled', () => {
+  test('the built bundle imports only the externals; react is not bundled', () => {
     const js = readFileSync(path.join(root, 'ui', 'dist', 'index.mjs'), 'utf8')
     const specifiers = [...js.matchAll(/^import\s[^;]*?from\s*"([^"]+)"/gm)].map((m) => m[1]!)
-    expect(specifiers).toContain('@kirocrew/app-sdk')
     expect(specifiers).toContain('react/jsx-runtime')
     const allowed = new Set(['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', '@kirocrew/app-sdk', '@kirocrew/app-sdk/ui'])
     for (const s of specifiers) expect(allowed.has(s), s).toBe(true)

@@ -1,5 +1,4 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import { defineApp } from "@kirocrew/app-sdk";
 import { MinusCircle, CheckCircle2, XCircle } from "lucide-react";
 const schemaVersion = 1;
 const patrolId = "20261125T154231Z";
@@ -740,8 +739,8 @@ function ReplacedRejections({ fix }) {
     /* @__PURE__ */ jsx("ul", { children: a.reasons.map((r, i) => /* @__PURE__ */ jsx("li", { children: r }, i)) })
   ] }, `${fix.hauntingId}-${a.attempt}`)) });
 }
-function SiteSection({ site, index: index2 }) {
-  const headingId = `ns-site-${index2}`;
+function SiteSection({ site, index }) {
+  const headingId = `ns-site-${index}`;
   const kept = site.fixes.filter((f) => f.decision === "kept");
   const rejected = site.fixes.filter((f) => f.decision === "rejected");
   const replaced = kept.flatMap((f) => f.earlierAttempts.filter((a) => a.decision === "rejected"));
@@ -810,9 +809,6 @@ function ReportView({ report }) {
 function MorningReport() {
   return /* @__PURE__ */ jsx(ReportView, { report: loadReport() });
 }
-const index = defineApp({
-  pages: [{ route: "/apps/night-shift", component: MorningReport }]
-});
 export {
-  index as default
+  MorningReport as default
 };

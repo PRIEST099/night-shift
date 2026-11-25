@@ -2,21 +2,16 @@ import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
 import { appSchema, readJson } from './helpers/manifest.js'
 
-// Pins the narrow pre-approvals of docs/crew-integration-notes.md. Crew 0.13.1 reads
-// toolsSettings.shell.allowedCommands as Rust-regex patterns matched against the whole command,
-// toolsSettings.{read,write}.allowedPaths as globs, and allowedTools as MCP auto-approvals.
+// Pins the MCP-only pre-approvals of docs/crew-integration-notes.md. Crew 0.13.1 turns an exact
+// `allowedTools` entry for an MCP tool into a KAS allow rule on every surface, and
+// toolsSettings.subagent.{availableAgents,trustedAgents} into native sub-agents. A shell or file limit that
+// only Crew's gate enforces (denyByDefault, fallbackAction deny) would make Crew refuse the sub-agent.
 
-const settingsSchema = z
+const agentSchema = z
   .object({
     allowedTools: z.array(z.string()),
     tools: z.array(z.string()),
-    toolsSettings: z
-      .object({
-        shell: z.object({ denyByDefault: z.literal(true), allowedCommands: z.array(z.string()).min(1) }).strict(),
-        read: z.object({ allowedPaths: z.array(z.string()).min(1) }).strict(),
-        write: z.object({ fallbackAction: z.literal('deny'), allowedPaths: z.array(z.string()).min(1) }).strict().optional(),
-      })
-      .strict(),
+    toolsSettings: z.object({ subagent: z.object({ availableAgents: z.array(z.string()), trustedAgents: z.array(z.string()) }).strict() }).strict().optional(),
   })
   .passthrough()
 
@@ -24,82 +19,52 @@ const app = appSchema.parse(readJson('app.json'))
 const agents = new Map(
   app.agents.map((file) => {
     const raw = readJson(file) as { name: string }
-    return [raw.name, settingsSchema.parse(raw)] as const
+    return [raw.name, agentSchema.parse(raw)] as const
   })
 )
 const get = (name: string) => agents.get(name)!
 
-const EXPECTED_SHELL: Record<string, string[]> = {
-  warden: ['night-shift validate( .*)?', 'night-shift workdir .*', 'night-shift report( .*)?', "npm run build:ui --prefix '[^']+'"],
-  seer: ['night-shift audit( .*)?', 'night-shift diff( .*)?'],
-  scribe: ['night-shift workdir .*'],
-  exorcist: ['night-shift verify .*'],
-}
 const EXPECTED_ALLOWED_TOOLS: Record<string, string[]> = {
-  warden: ['@kirocrew-core/spawn_run', '@kirocrew-core/spawn_status', '@kirocrew-core/wait'],
-  seer: ['@night-shift:unseen/explain_haunting'],
-  scribe: ['@night-shift:unseen/explain_haunting', '@night-shift:unseen/suggest_fix'],
-  exorcist: ['@night-shift:unseen/explain_haunting'],
+  warden: ['@night-shift:shift/validate', '@night-shift:shift/report'],
+  seer: ['@night-shift:shift/audit', '@night-shift:shift/diff', '@night-shift:unseen/explain_haunting'],
+  scribe: ['@night-shift:shift/workdir', '@night-shift:shift/diff', '@night-shift:shift/list_source', '@night-shift:shift/read_source', '@night-shift:shift/write_fix_file', '@night-shift:unseen/explain_haunting', '@night-shift:unseen/suggest_fix'],
+  exorcist: ['@night-shift:shift/verify', '@night-shift:unseen/explain_haunting'],
 }
 
-/** The literal program and subcommand every pattern must start with (the regex is anchored at both ends). */
-const fixedPrefix = (pattern: string): string => /^[a-z:-]+ [a-z:-]+/.exec(pattern)?.[0] ?? ''
-
-describe('Crew pre-approvals', () => {
-  test('each agent pre-approves exactly its documented shell commands', () => {
-    for (const [name, commands] of Object.entries(EXPECTED_SHELL)) expect(get(name).toolsSettings.shell.allowedCommands, name).toEqual(commands)
+describe('Crew pre-approvals (MCP only)', () => {
+  test('each agent pre-approves exactly its documented MCP tools', () => {
+    for (const [name, tools] of Object.entries(EXPECTED_ALLOWED_TOOLS)) expect(get(name).allowedTools, name).toEqual(tools)
   })
 
-  test('no wildcard shell: every pattern starts with a fixed program and subcommand, and no agent auto-approves the shell tool itself', () => {
-    const allowedPrefixes = new Set(['night-shift validate', 'night-shift workdir', 'night-shift report', 'night-shift audit', 'night-shift diff', 'night-shift verify', 'npm run'])
+  test('every allowed tool is an exact tool of the app servers, and is also listed in tools', () => {
     for (const [name, a] of agents) {
-      for (const pattern of a.toolsSettings.shell.allowedCommands) {
-        expect(allowedPrefixes.has(fixedPrefix(pattern)), `${name}: ${pattern}`).toBe(true)
-        expect(pattern, `${name}: ${pattern}`).not.toMatch(/^\.\*|^\(|\|/)
-      }
       for (const t of a.allowedTools) {
-        expect(['shell', 'execute_bash', 'execute_pwsh', 'read', 'write', 'fs_read', 'fs_write', '*'], `${name}: ${t}`).not.toContain(t)
+        expect(t, `${name}: ${t}`).toMatch(/^@night-shift:(shift|unseen)\/[a-z_]+$/)
+        expect(a.tools, `${name}: ${t}`).toContain(t)
+      }
+    }
+  })
+
+  test('no shell, file or wildcard tool anywhere, and no shell or file settings that only the Crew gate enforces', () => {
+    for (const [name, a] of agents) {
+      for (const t of [...a.tools, ...a.allowedTools]) {
+        expect(['shell', 'execute_bash', 'execute_pwsh', 'read', 'write', 'fs_read', 'fs_write', '*', '@kirocrew-core'], `${name}: ${t}`).not.toContain(t)
         expect(t, `${name}: ${t}`).not.toMatch(/^@builtin|\*/)
       }
+      const settings = Object.keys(a.toolsSettings ?? {})
+      expect(settings.every((k) => k === 'subagent'), name).toBe(true)
     }
   })
 
-  test('the build:ui grant cannot carry extra npm flags: the quoted directory is the last thing allowed', () => {
-    const re = new RegExp(`^(?:${EXPECTED_SHELL.warden![3]})$`)
-    expect(re.test("npm run build:ui --prefix 'D:\\kiroween 2026\\night-shift'")).toBe(true)
-    expect(re.test("npm run build:ui --prefix 'D:\\x' --script-shell=calc")).toBe(false)
-    expect(re.test('npm run build:ui')).toBe(false)
+  test('the Warden runs the three specialists as native sub-agents and trusts only them', () => {
+    const w = get('warden')
+    expect(w.tools).toContain('subagent')
+    expect(w.toolsSettings?.subagent).toEqual({ availableAgents: ['seer', 'scribe', 'exorcist'], trustedAgents: ['seer', 'scribe', 'exorcist'] })
+    for (const n of ['seer', 'scribe', 'exorcist']) expect(get(n).toolsSettings, n).toBeUndefined()
   })
 
-  test('the patterns match the commands the prompts tell each agent to run, and nothing of another role', () => {
-    const home = "--home 'D:\\kiroween 2026\\night-shift'"
-    const runs: Record<string, string[]> = {
-      warden: [`night-shift validate ${home}`, `night-shift report --publish-ui ${home}`, `night-shift workdir cursed-shop w1 --patrol-id 20261125T154231Z ${home}`],
-      seer: [`night-shift audit --site cursed-shop ${home}`, `night-shift diff --site cursed-shop --json ${home}`],
-      scribe: [`night-shift workdir cursed-shop w1 --patrol-id 20261125T154231Z --attempt 2 ${home}`],
-      exorcist: [`night-shift verify cursed-shop demo/work/p/w1 --haunting w1 --apply ${home}`],
-    }
-    const matches = (name: string, cmd: string) => get(name).toolsSettings.shell.allowedCommands.some((p) => new RegExp(`^(?:${p})$`).test(cmd))
-    for (const [name, cmds] of Object.entries(runs)) for (const cmd of cmds) expect(matches(name, cmd), `${name}: ${cmd}`).toBe(true)
-    expect(matches('seer', `night-shift verify x y --haunting z ${home}`)).toBe(false)
-    expect(matches('exorcist', `night-shift audit --site x ${home}`)).toBe(false)
-    expect(matches('scribe', 'git status')).toBe(false)
-    expect(matches('warden', 'git push')).toBe(false)
-  })
-
-  test('MCP auto-approvals are exact tools of the app server or the spawn tools', () => {
-    for (const [name, tools] of Object.entries(EXPECTED_ALLOWED_TOOLS)) expect(get(name).allowedTools, name).toEqual(tools)
-    for (const n of ['seer', 'scribe', 'exorcist']) expect(get(n).tools, n).toContain('@night-shift:unseen')
-  })
-
-  test('only the Scribe may write, and only under demo/work', () => {
-    for (const [name, a] of agents) expect(a.toolsSettings.write === undefined, name).toBe(name !== 'scribe')
-    expect(get('scribe').toolsSettings.write).toEqual({ fallbackAction: 'deny', allowedPaths: ['**/demo/work/**'] })
-  })
-
-  test('reads are limited to the patrol file, Night Shift state and work directories', () => {
-    for (const [name, a] of agents)
-      for (const p of a.toolsSettings.read.allowedPaths) expect(p, `${name}: ${p}`).toMatch(/^\*\*\/(patrol\.yaml|REPORT\.md|report\.json|\.night-shift\/(\*\*|history\/\*\*|fixes\/\*\*)|demo\/work\/\*\*)$/)
+  test('the app declares the Night Shift MCP server as the night-shift bin with the mcp argument', () => {
+    expect(app.mcpServers['shift']).toEqual({ command: 'night-shift', args: ['mcp'] })
   })
 
   test('the nightly cron names the repository and resolves to the Warden', () => {

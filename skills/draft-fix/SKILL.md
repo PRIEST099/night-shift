@@ -5,7 +5,7 @@ description: Choose and write one minimal source fix for one accessibility haunt
 
 # Draft a fix
 
-Work only inside the directory printed by `night-shift workdir <site> <haunting-id> --patrol-id <id>`. Make the smallest source change that removes the haunting. Run `night-shift` for anything deterministic; do not write your own audit.
+Work only inside the directory returned by the `workdir` tool (`night-shift workdir <site> <haunting-id> --patrol-id <id>`). Read it with `read_source` (pass `workdir`) and write it with `write_fix_file`, which refuses any other place. Make the smallest source change that removes the haunting. Use the `night-shift` tools for anything deterministic; do not write your own audit.
 
 ## Choose the fix by type
 
@@ -27,4 +27,4 @@ Never hide a focusable control with `aria-hidden="true"` alone. The control stay
 - No new file types other than html, css, js, svg, json.
 - No edits outside the work directory.
 
-If the Exorcist rejected a previous attempt, read its reasons and change the approach. Do not repeat the same edit. Return the work directory path and one sentence about the change. Do not run `night-shift verify`.
+If the Exorcist rejected a previous attempt, read its reasons and change the approach. Do not repeat the same edit. Return the work directory path and one sentence about the change. Do not verify: that is the Exorcist's job.

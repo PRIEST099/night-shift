@@ -28,45 +28,54 @@ describe('agents', () => {
     for (const [name, a] of agents) expect(path.basename(a.file, '.json')).toBe(name)
   })
 
-  test('the Warden is the lead: kirocrew-core, spawn and wait, reason specialist, 2 attempts, no write tool', () => {
+  test('no agent has a shell, file or kirocrew-core tool: every tool is an MCP tool, or the Warden sub-agent tool', () => {
+    for (const [name, a] of agents) {
+      for (const t of a.tools) {
+        if (name === 'warden' && t === 'subagent') continue
+        expect(t, `${name}: ${t}`).toMatch(/^@night-shift:(shift|unseen)\/[a-z_]+$/)
+      }
+    }
+  })
+
+  test('the Warden is the lead: sub-agent tool, specialists by name, 2 attempts, validate and report, no source tools', () => {
     const w = agents.get('warden')!
-    expect(w.tools).toContain('@kirocrew-core')
-    expect(w.tools).not.toContain('write')
-    expect(w.prompt).toMatch(/spawn/)
-    expect(w.prompt).toMatch(/wait/)
-    expect(w.prompt).toMatch(/specialist/)
+    expect(w.tools).toContain('subagent')
+    expect(w.tools).not.toContain('@kirocrew-core')
+    expect(w.prompt).toMatch(/sub-agent/)
     expect(w.prompt).toMatch(/2 attempts/)
-    expect(w.prompt).toMatch(/night-shift validate/)
-    expect(w.prompt).toMatch(/night-shift report/)
+    expect(w.prompt).toMatch(/`validate`/)
+    expect(w.prompt).toMatch(/`report`/)
     expect(w.prompt).toMatch(/one after another|sequential/i)
     for (const n of ['seer', 'scribe', 'exorcist']) expect(w.prompt).toContain(`\`${n}\``)
     expect(w.prompt).toMatch(/never edit source/i)
+    expect(w.prompt).toMatch(/at most 2 fixes/)
+    for (const t of w.tools) expect(t).not.toMatch(/write_fix_file|read_source|workdir|verify|audit/)
   })
 
-  test('the Seer, Scribe and Exorcist have the unseen MCP tools, named as Crew mounts the app server', () => {
-    for (const n of ['seer', 'scribe', 'exorcist']) expect(agents.get(n)!.tools, n).toContain('@night-shift:unseen')
+  test('the Seer, Scribe and Exorcist keep THE UNSEEN tools, named as Crew mounts the app server', () => {
+    for (const n of ['seer', 'scribe', 'exorcist']) expect(agents.get(n)!.tools.some((t) => t.startsWith('@night-shift:unseen/')), n).toBe(true)
   })
 
-  test('the Exorcist has no write tool and never edits source', () => {
+  test('the Exorcist can only verify and explain, and never edits source', () => {
     const e = agents.get('exorcist')!
-    expect(e.tools).not.toContain('write')
+    expect(e.tools.filter((t) => t.startsWith('@night-shift:shift/'))).toEqual(['@night-shift:shift/verify'])
     expect(e.prompt).toMatch(/never edit source/i)
-    expect(e.prompt).toMatch(/night-shift verify/)
-    expect(e.prompt).toMatch(/exit code/i)
+    expect(e.prompt).toMatch(/`verify`/)
+    expect(e.prompt).toMatch(/`code`/)
   })
 
-  test('the Seer cannot write and runs audit and diff', () => {
+  test('the Seer can only audit and diff, and returns the workList', () => {
     const s = agents.get('seer')!
-    expect(s.tools).not.toContain('write')
-    expect(s.prompt).toMatch(/night-shift audit/)
-    expect(s.prompt).toMatch(/night-shift diff/)
+    expect(s.tools.filter((t) => t.startsWith('@night-shift:shift/'))).toEqual(['@night-shift:shift/audit', '@night-shift:shift/diff'])
+    expect(s.prompt).toMatch(/`audit`/)
+    expect(s.prompt).toMatch(/`diff`/)
     expect(s.prompt).toMatch(/workList/)
   })
 
-  test('the Scribe may write, uses workdir, and its prompt forbids overlays, scripts and aria-hidden', () => {
+  test('the Scribe drafts in a work directory, and its prompt forbids overlays, scripts and aria-hidden', () => {
     const s = agents.get('scribe')!
-    expect(s.tools).toContain('write')
-    expect(s.prompt).toMatch(/night-shift workdir/)
+    expect(s.tools.filter((t) => t.startsWith('@night-shift:shift/')).sort()).toEqual(['diff', 'list_source', 'read_source', 'workdir', 'write_fix_file'].map((t) => `@night-shift:shift/${t}`).sort())
+    expect(s.prompt).toMatch(/`workdir`/)
     expect(s.prompt).toMatch(/overlay/i)
     expect(s.prompt).toMatch(/script/i)
     expect(s.prompt).toMatch(/aria-hidden/)
@@ -74,14 +83,21 @@ describe('agents', () => {
     expect(s.prompt).toMatch(/outside your work directory/)
   })
 
-  test('only the Scribe has a write tool', () => {
-    for (const [name, a] of agents) expect(a.tools.includes('write'), name).toBe(name === 'scribe')
+  test('only the Scribe has write_fix_file', () => {
+    for (const [name, a] of agents) expect(a.tools.includes('@night-shift:shift/write_fix_file'), name).toBe(name === 'scribe')
+  })
+
+  test('every specialist prompt reads REPO from the Warden message and passes it as home', () => {
+    for (const n of ['seer', 'scribe', 'exorcist']) {
+      expect(agents.get(n)!.prompt, n).toMatch(/REPO: <directory>/)
+      expect(agents.get(n)!.prompt, n).toMatch(/`home`/)
+    }
   })
 
   test('no agent prompt tells anyone to push or open a pull request', () => {
     for (const a of agents.values()) {
       expect(a.prompt).not.toMatch(/gh pr create/)
-      expect(a.prompt.replace(/Never run git push[^.]*\./, '')).not.toMatch(/git push/)
+      expect(a.prompt.replace(/Never push to a remote[^.]*\./, '')).not.toMatch(/git push/)
     }
   })
 
@@ -89,4 +105,3 @@ describe('agents', () => {
     for (const a of agents.values()) expect(readFileSync(path.join(root, a.file))[0]).not.toBe(0xef)
   })
 })
-

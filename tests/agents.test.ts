@@ -43,8 +43,8 @@ describe('agents', () => {
     expect(w.prompt).toMatch(/never edit source/i)
   })
 
-  test('the Seer, Scribe and Exorcist have the unseen MCP tools', () => {
-    for (const n of ['seer', 'scribe', 'exorcist']) expect(agents.get(n)!.tools, n).toContain('@unseen')
+  test('the Seer, Scribe and Exorcist have the unseen MCP tools, named as Crew mounts the app server', () => {
+    for (const n of ['seer', 'scribe', 'exorcist']) expect(agents.get(n)!.tools, n).toContain('@night-shift:unseen')
   })
 
   test('the Exorcist has no write tool and never edits source', () => {

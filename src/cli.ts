@@ -11,6 +11,7 @@ import { runReport } from './commands/report.js'
 import { runValidate } from './commands/validate.js'
 import { runVerify } from './commands/verify.js'
 import { runWorkdir } from './commands/workdir.js'
+import { extractHome, resolveHome } from './pure/home.js'
 
 const USAGE = `night-shift <command> [options]
 
@@ -22,6 +23,8 @@ Commands:
   workdir <site> <haunting-id> --patrol-id <id> [--attempt <n>]
   report [--patrol-id <id>] [--publish-ui]
   patrol --no-agents [--publish-ui]
+
+Every command also takes --home <dir>: the repository directory. Without it, NIGHT_SHIFT_HOME, then the working directory.
 
 Exit codes: 0 ok, 1 error, 2 not supported (patrol without --no-agents, --open-prs), 3 fix rejected (verify).`
 
@@ -44,8 +47,14 @@ export function parseFlags(args: string[], strings: readonly string[], booleans:
 const opt = <K extends string>(key: K, value: string | undefined): { [P in K]?: string } => (value === undefined ? {} : ({ [key]: value } as { [P in K]?: string }))
 
 /** Run the CLI and return the exit code. Never calls process.exit. */
-export async function runCli(argv: string[], ctx: Ctx, deps: Deps = {}): Promise<number> {
-  const [command, ...rest] = argv
+export async function runCli(rawArgv: string[], baseCtx: Ctx, deps: Deps = {}): Promise<number> {
+  const home = extractHome(rawArgv)
+  if (home.error !== undefined) {
+    baseCtx.error(home.error)
+    return 1
+  }
+  const ctx: Ctx = home.home === undefined ? baseCtx : { ...baseCtx, cwd: resolveHome({}, baseCtx.cwd, home.home) }
+  const [command, ...rest] = home.argv
   try {
     switch (command) {
       case 'validate': {
@@ -133,7 +142,7 @@ function isMain(): boolean {
 
 if (isMain()) {
   const ctx: Ctx = {
-    cwd: process.cwd(),
+    cwd: resolveHome(process.env, process.cwd()),
     env: process.env,
     log: (m) => console.log(m),
     error: (m) => console.error(m),

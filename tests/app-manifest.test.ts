@@ -66,7 +66,7 @@ describe('app.json', () => {
       {
         name: 'nightly-patrol',
         cron_expr: '0 2 * * *',
-        message: 'Run the Night Shift patrol from patrol.yaml and write the morning report.',
+        message: 'Run the Night Shift patrol from patrol.yaml in D:\\kiroween 2026\\night-shift and write the morning report.',
         agent: 'warden',
         enabled: false,
       },

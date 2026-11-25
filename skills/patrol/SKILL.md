@@ -23,6 +23,7 @@ Run the deterministic `night-shift` CLI for every judgement it can make. Do not 
 
 ## Rules
 
+- A Crew session does not start in the repository. Pass `--home '<repo>'` to every `night-shift` command and run one plain command per call: Crew pre-approves nothing else (see `docs/crew-integration-notes.md`).
 - Fixes run sequentially so each one starts from the previous kept fix.
 - Never push to a remote or open a pull request. `--open-prs` is future work.
 - Automated checks find roughly 30 to 40 percent of WCAG issues. Do not claim a site meets a standard.

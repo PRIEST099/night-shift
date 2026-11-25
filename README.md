@@ -13,14 +13,14 @@ A crew of four Kiro agents that patrols a list of websites overnight with [THE U
 ```mermaid
 flowchart LR
   cron[nightly-patrol cron<br/>disabled by default] --> W[Warden]
-  W -->|spawn, specialist| S[Seer]
+  W -->|sub-agent| S[Seer]
   S -->|workList| W
-  W -->|spawn, specialist| C[Scribe]
+  W -->|sub-agent| C[Scribe]
   C -->|work dir| W
-  W -->|spawn, specialist| E[Exorcist]
+  W -->|sub-agent| E[Exorcist]
   E -->|keep or reject + reasons| W
   W --> R[night-shift report]
-  S & C & E --> CLI[night-shift CLI]
+  S & C & E -->|night-shift MCP tools| CLI[night-shift CLI]
   CLI -->|stdio MCP client| U[THE UNSEEN MCP server]
   U --> T[(Local static server<br/>demo copy)]
   CLI --> H[(.night-shift/history, fixes)]
@@ -30,10 +30,12 @@ flowchart LR
 
 | Agent | Job | Tools |
 | --- | --- | --- |
-| Warden (lead) | Validates `patrol.yaml`, spawns the others one step at a time (reason `specialist`), writes the morning report. Never edits source. | read, shell, `@kirocrew-core` |
-| Seer | Runs `night-shift audit` and `night-shift diff` for one site and returns the `workList`: new or worsened Wraith and Restless hauntings only. | read, shell, `@night-shift:unseen` |
-| Scribe | Gets one haunting, makes a work directory copy, drafts a minimal source fix. Never adds an overlay or script, never hides a problem with `aria-hidden`. | read, write, shell, `@night-shift:unseen` |
-| Exorcist | Runs `night-shift verify`. Keeps the fix only if the haunting is gone and no new one appeared. Never edits source. | read, shell, `@night-shift:unseen` |
+| Warden (lead) | Validates `patrol.yaml`, runs the others one step at a time as native sub-agents, writes the morning report. Never edits source. | sub-agent tool, `validate`, `report` |
+| Seer | Runs `audit` and `diff` for one site and returns the `workList`: new or worsened Wraith and Restless hauntings only. | `audit`, `diff`, `@night-shift:unseen/explain_haunting` |
+| Scribe | Gets one haunting, makes a work directory copy, drafts a minimal source fix. Never adds an overlay or script, never hides a problem with `aria-hidden`. | `workdir`, `diff`, `list_source`, `read_source`, `write_fix_file`, `@night-shift:unseen/explain_haunting` and `suggest_fix` |
+| Exorcist | Runs `verify`. Keeps the fix only if the haunting is gone and no new one appeared. Never edits source. | `verify`, `@night-shift:unseen/explain_haunting` |
+
+No agent has a shell or a file tool. Every step goes through the Night Shift MCP server (`night-shift mcp`, mounted by Crew as `@night-shift:shift`), which calls the same code as the CLI. Every tool takes `home` (the repository root, else `NIGHT_SHIFT_HOME`). Paths are confined: `..`, absolute paths and symlinks out of the tree are rejected, `read_source` and `list_source` read only inside the site's `source` directory (or inside a work directory, when `workdir` is passed), and `write_fix_file` writes only inside a directory that `workdir` created.
 
 After a reject the Warden gives the Scribe the Exorcist's reasons for one more attempt. The limit is 2 attempts per haunting. Fixes run one at a time so each starts from the previous kept fix.
 
@@ -94,11 +96,13 @@ Checked on Kiro Crew 0.13.1 (Windows), 2026-11-25:
 
 - `kirocrew agent validate ./agents` reports 0 problems for the 4 agent specs.
 - `app.json` uses no `${VAR}` placeholders: Crew does not expand them. THE UNSEEN starts as `unseen-mcp`, with the literal env `UNSEEN_CHROMIUM_CHANNEL=chromium`. Crew mounts it as `night-shift:unseen`, so the agents reference `@night-shift:unseen`.
-- `kirocrew app update` does not work on native Windows. To pick up a change, run `kirocrew app uninstall night-shift`, then `kirocrew app install .`. The uninstall withdraws the app's trust grant, so trust it again from the dashboard (App Store or Security, Trusted apps) before `kirocrew app enable night-shift`.
+- Crew mounts the Night Shift server as `night-shift:shift`, so the agents reference `@night-shift:shift/<tool>`. The server is declared as `{"command": "night-shift", "args": ["mcp"]}`, so the `night-shift` bin must be on the PATH of the Crew gateway (`%APPDATA%\npm`, restart Crew after `npm link`).
 
-**Pre-approvals.** Each agent pre-approves only its own `night-shift` subcommands (`toolsSettings.shell.allowedCommands` with `denyByDefault`). Reads are limited to `patrol.yaml`, `.night-shift/` and the work directories. Only the Scribe may write, and only under `demo/work/`. Every other command is refused. `tests/grants.test.ts` pins all of this. A Crew session does not start in this repo, and Crew never pre-approves a `cd '<dir>'; ...` chain whose path has quotes or backslashes. So the agents pass `--home '<repo>'` to every command instead, and the task message must name the repo.
+**Pre-approvals.** Each agent lists exactly the MCP tools of its role in `allowedTools`, so Crew runs them without a permission prompt (`tests/grants.test.ts` pins the lists). There are no shell or file grants. The Warden runs the Seer, Scribe and Exorcist as native sub-agents (`toolsSettings.subagent.availableAgents` and `trustedAgents`). Crew registers a native sub-agent only when its limits are not enforced just at Crew's own gate, which is why the specialists have MCP tools and nothing else. The task message must name the repository, because a Crew session does not start in it.
 
-**What does not work yet.** The pre-approvals take effect in gateway sessions; a spawned Seer ran its allowed command unprompted. A patrol started with `kirocrew chat --agent night-shift--warden -m "..."` still stops at `night-shift validate`. That surface never honours an agent's shell or file pre-approvals and denies whatever it cannot ask about. Every spawn also waits for approval in the dashboard. See `docs/crew-integration-notes.md` for the evidence and the options, and `docs/patrol-transcripts/` for the run. For now, run the Warden in an interactive `kirocrew chat` or from the dashboard, and approve the spawns there.
+**Updating the installed app on Windows.** `kirocrew app install .` refuses an app that is already installed, and `kirocrew app update` is not available on native Windows. A change to `agents/` or `app.json` reaches Crew in one of two ways: press Update or Sync on the app's page in the dashboard, or uninstall and install again, which withdraws the app's trust grant so you must trust it again before `kirocrew app enable night-shift`.
+
+**Status of the unattended run.** The Night Shift MCP server and the agent files are in place, `kirocrew agent validate ./agents` reports 0 problems, and `npm run test:integration` runs the whole tool sequence (audit, diff, workdir, write, a rejected and a kept verify, report) against the real THE UNSEEN server. A `kirocrew chat --agent night-shift--warden -m "..."` run with the new agent files has not been done yet, because Crew still holds the previous agent files. See `docs/crew-integration-notes.md` and `docs/patrol-transcripts/`.
 
 ## The patrol file
 
@@ -130,6 +134,7 @@ A site has either `serve.dir` (with `source`) or `baseUrl`. `night-shift validat
 | `night-shift verify <site> <fixDir> --haunting id [--base dir] [--apply]` | Audits base and fix, keeps or rejects, writes a fix record. `--apply` copies kept files into `fixedDir`. | 0 keep, 3 reject, 1 error |
 | `night-shift report [--patrol-id id] [--publish-ui]` | Writes `REPORT.md` and `report.json`. | 0, 1 |
 | `night-shift patrol --no-agents` | `validate`, `audit`, `diff` and `report` with no fixes. | 0 completed, 1 error |
+| `night-shift mcp` | Stdio MCP server for the crew: `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `read_source`, `write_fix_file`. | runs until the client closes |
 
 Every command takes `--home <dir>`, the repository directory. Without it the CLI uses `NIGHT_SHIFT_HOME`, then the working directory. Relative paths in `patrol.yaml` and the default THE UNSEEN path resolve against that directory.
 
@@ -194,13 +199,13 @@ The Haunting Score is weighted by type and capped, so removing one Nameless Spir
 
 ## Nightly schedule
 
-`app.json` declares one message cron, `nightly-patrol`, at `0 2 * * *` for the `warden` agent, with `enabled: false`. **Nothing runs overnight until you enable it.** To turn it on, set `"enabled": true` on that entry in `app.json` and reinstall the app with `kirocrew app install .`, or enable the cron from Crew itself, then check that Crew lists `nightly-patrol` as enabled. The exact Crew command for enabling a single cron was not checked on the author's machine. Crew command crons run through `sh -c` and fail on Windows, so this is a message cron: it sends the text "Run the Night Shift patrol from patrol.yaml in D:\kiroween 2026\night-shift and write the morning report." to the Warden. The message names the repository because a cron session runs in its own Crew work directory. Change the path to your checkout before you enable the cron. An unattended cron run has not been verified: its spawns wait for approval in the dashboard (see `docs/crew-integration-notes.md`).
+`app.json` declares one message cron, `nightly-patrol`, at `0 2 * * *` for the `warden` agent, with `enabled: false`. **Nothing runs overnight until you enable it.** To turn it on, set `"enabled": true` on that entry in `app.json` and reinstall the app with `kirocrew app install .`, or enable the cron from Crew itself, then check that Crew lists `nightly-patrol` as enabled. The exact Crew command for enabling a single cron was not checked on the author's machine. Crew command crons run through `sh -c` and fail on Windows, so this is a message cron: it sends the text "Run the Night Shift patrol from patrol.yaml in D:\kiroween 2026\night-shift and write the morning report." to the Warden. The message names the repository because a cron session runs in its own Crew work directory. Change the path to your checkout before you enable the cron. An unattended cron run has not been verified (see `docs/crew-integration-notes.md`).
 
 ## Tests
 
 ```
 npm test                   # unit and property tests (fast-check, at least 100 runs each)
-npm run test:integration   # real THE UNSEEN server: patrol against the demo copy, verify, dashboard audit
+npm run test:integration   # real THE UNSEEN server: patrol against the demo copy, verify, the MCP tool sequence, dashboard audit
 npm run typecheck
 ```
 

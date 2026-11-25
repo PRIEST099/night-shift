@@ -10,14 +10,14 @@ Night Shift has two layers.
 ```mermaid
 flowchart LR
   cron[nightly-patrol cron<br/>disabled by default] --> W[Warden]
-  W -->|spawn, specialist| S[Seer]
+  W -->|sub-agent| S[Seer]
   S -->|workList| W
-  W -->|spawn, specialist| C[Scribe]
+  W -->|sub-agent| C[Scribe]
   C -->|work dir| W
-  W -->|spawn, specialist| E[Exorcist]
+  W -->|sub-agent| E[Exorcist]
   E -->|keep or reject + reasons| W
   W --> R[night-shift report]
-  S & C & E --> CLI[night-shift CLI]
+  S & C & E -->|night-shift MCP tools| CLI[night-shift CLI]
   CLI -->|stdio MCP client| U[THE UNSEEN MCP server]
   U --> T[(Local static server<br/>demo copy)]
   CLI --> H[(.night-shift/history, fixes)]

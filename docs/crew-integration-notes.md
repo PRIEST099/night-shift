@@ -3,10 +3,25 @@
 Found by the product lead's real Crew run (`kiro-logs/crew-patrol-1.log`) and then by reading the installed package, read only. Paths below are relative to
 `C:\Program Files\KiroCrew\resources\backend-dist\kirocrew-backend\Lib\site-packages\kiro_crew\`. The package ships no prose docs for this, so every answer comes from source docstrings and code.
 
-## Summary
+## Summary (run 49e, owner decision: MCP tools only, no global Crew settings changed)
 
-The agent files now carry narrow pre-approvals, and Crew copies them into the generated `night-shift--*.json` files. Gateway sessions honour them: a spawned Seer ran `night-shift diff` without a prompt, and `git status` was refused by its profile. **The requested `kirocrew chat -m` patrol still cannot run.** Crew 0.13.1 does not let pre-approvals work on that surface (finding 1 below), and every spawn from the Warden waits for a person (finding 2). The patrol transcript in `docs/patrol-transcripts/2026-11-25-patrol.md` shows the Warden stopping at `night-shift validate`.
+The owner chose to run the crew through MCP tools only and to change no global Crew setting. Night Shift now has a stdio MCP server, `night-shift mcp`, and the four agents use nothing else.
 
+Done and checked here:
+
+- `night-shift mcp` exposes `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `read_source` and `write_fix_file`. Each tool calls the existing command code. Each takes `home`, else `NIGHT_SHIFT_HOME`, else the working directory. Paths go through `src/pure/confine.ts` (normalization) and `src/io/confine.ts` (symlink check against the real path). `tests/confine.test.ts` has the property tests, `tests/mcp.test.ts` calls every tool through an in-memory MCP client, and `tests/mcp.int.test.ts` runs audit, diff, workdir, write, a rejected verify, a kept verify and report against the real THE UNSEEN server.
+- A real stdio start of the installed bin (`night-shift.cmd mcp`, resolved from `%APPDATA%\npm`) answered `validate`.
+- `app.json` declares the server as `shift`: `{"command": "night-shift", "args": ["mcp"]}`. Crew mounts it as `night-shift:shift`, so agents name tools `@night-shift:shift/<tool>`. THE UNSEEN stays `@night-shift:unseen/...`.
+- Each agent lists exactly its role's tools in `tools` and in `allowedTools`. No agent has `read`, `write`, `shell` or `@kirocrew-core`. The Warden has the `subagent` tool and `toolsSettings.subagent.availableAgents` and `trustedAgents` set to `seer`, `scribe`, `exorcist`. The three specialists carry no `toolsSettings`, because `acp/kas_subagent_targets.py` refuses a target with a shell `denyByDefault` or a write `fallbackAction: "deny"` (12-18, `_gate_only_limits`).
+- `kirocrew agent validate ./agents` reports 0 problems for the 4 specs.
+
+**Not done: installing the new agent files into Crew, and so the unattended patrol.** `kirocrew app install .` answers "app 'night-shift' is already installed (v0.1.0). Update it in place instead ... or uninstall first." `kirocrew app update night-shift` answers that it is not available on native Windows and tells the user to press Update (or Sync) on the app's page in the dashboard. The only other CLI route is `kirocrew app uninstall`, which withdraws the owner's trust grant (`apps/manager_uninstall.py` 123-167), so it was not run. The generated files in `%USERPROFILE%\.kiro\agents\night-shift--*.json` (written 19:25) are still the old ones: the Warden has `tools` `read,shell,@kirocrew-core` and the old shell grants. No `kirocrew chat` patrol was run against them, because that would test the old agents, and no patrol-2 transcript exists. Nothing was approved, trusted or enabled in Crew in this run.
+
+What is still unproven, and only a Crew run can show it: whether the native sub-agent mechanism registers the three specialists (the session-start notice names any target Crew leaves out), whether the sub-agent calls need an approval, and whether `kirocrew chat -m` honours the `allowedTools` of the specialists inside the Warden's turn. If a sub-agent call needs an approval, the patrol must stop there and the owner decides.
+
+Owner step: press **Update** (or **Sync**) on the night-shift app page in the dashboard, then run the checks listed under "Checks after the update" at the end of this file.
+
+The earlier findings below are the evidence from run 49d. Findings 1 and 2 concerned shell and file grants and `spawn_run`, which the agents no longer use. Finding 3 (the gateway PATH) is the reason for the restart the owner did.
 ## (a) Which agent JSON fields reach the generated Kiro CLI agent
 
 Registration reads the whole template (`apps/bridges_agents.py` 1095-1112), merges in the app's MCP servers and policy (1157-1179) and writes the merged object (1229). Only the keys in `_FRAMEWORK_OWNED_AGENT_KEYS` (655-678) are derived by the framework: `name`, `mcpServers`, `tools`, `allowedTools`, `prompt`, `managedToolPolicy`, `includeMcpJson`, `resources`. Every other key, `toolsSettings` included, is copied from the template as written. `allowedTools` is copied too, after the governance ceiling filter (`_ceiling_filtered_allowed`, 202-246, applied at 284). Before this change the Warden file had no grant keys because the template had none.
@@ -45,15 +60,21 @@ Every ACP session runs in a Crew work directory (`session_work_dir.py` 3-7). A d
 
 So the repository location is explicit. The CLI resolves paths against `--home`, then `NIGHT_SHIFT_HOME`, then the cwd (`src/pure/home.ts`). The task message and the cron message name the repository, and every agent passes `--home '<repo>'`.
 
-## Findings that still block an unattended patrol
+## Findings from run 49d (superseded by the MCP-only design, except finding 4)
 
 1. **`kirocrew chat` never honours pre-approvals for shell or file tools.** It answers each permission request itself (`cli_chat.py` 1046-1074). The docstring at 1070-1074 says a gate auto-approve "still asks". The request it builds carries the spec's refusals and leaves out its grants (1146-1156). With `-m` there is no terminal, so the request is denied (1266-1284). Only MCP tools in `allowedTools` skip the request. Observed: `night-shift validate --home '...'` and `Read File` were denied with "needs approval, and this invocation cannot ask".
 2. **Spawns need a person.** See (b). A `kirocrew spawn run --agent seer` probe sat at "waiting for spawn approval" until it was approved from the dashboard approvals feed (`POST /api/approvals/spawn:<id>/approve`). The Warden's `spawn_run` goes through the same gate.
 3. **Gateway sessions cannot find the npm global bin.** In that probe the Seer's grant worked: `night-shift diff ...` was approved with no prompt, and `git status` was refused with "Blocked by a permission rule (deny shell matching "*") ... Source: agent-profile". But the command then failed with "The term 'night-shift' is not recognized", and `night-shift:unseen` failed to start. `%APPDATA%\npm` is on the user PATH, so the running gateway probably started with an older PATH. That cause is unverified. Restarting the gateway, or adding `mcp.extra_path_dirs` to Crew's config, is the owner's choice and was not done.
 4. **Reinstall on Windows.** `kirocrew app update` is "not available on native Windows". `kirocrew app uninstall` withdraws the app's trust grant (`apps/manager_uninstall.py` 123-167), and `kirocrew app enable` then fails with "third-party app execution is disabled". The grant the product lead had made from the dashboard at 16:15 was restored for `night-shift` only, through the same dashboard endpoint (`POST /api/security/trusted-apps/night-shift`), and the app was enabled with `POST /api/apps/night-shift/enable`. That is the only Crew state this work changed, and it puts back the earlier value.
 
-## Options for the owner (not implemented)
+## Options taken and left open
 
-- **Remove finding 1 on every surface.** Expose the Warden's own steps as tools of a small Night Shift MCP server (`validate`, `report`, `build_ui`, plus the site list and the fix decisions) and list each one in `allowedTools`. Those calls would never raise a permission request. The specialists' shell grants already work on the gateway.
-- **Finding 2 needs one owner decision.** One choice is the global `hooks.auto_approve_subagent_spawn`. It is broader than this app: it covers every agent's spawns, though each child still runs under its own profile. The other is to run the specialists as native KAS sub-agents through `toolsSettings.subagent.availableAgents` / `trustedAgents` (`acp/kas_subagent_rules.py`). That would mean giving the specialists MCP-only tools: Crew does not register a sub-agent whose limits it enforces only at its own gate, such as `denyByDefault` or `fallbackAction: "deny"` (`acp/kas_subagent_targets.py` 12-18).
-- **Finding 3.** Restart the gateway after `npm link`, or have the owner add the npm bin to `mcp.extra_path_dirs`.
+- **Taken (run 49e):** the Night Shift MCP server removes findings 1 for the Warden's own steps, and the specialists have no shell or file tools at all. Native sub-agents replace `spawn_run`, so no spawn approval of finding 2 should apply, if Crew registers them.
+- **Finding 3:** the owner restarted Crew, and `night-shift` is now found as a bin in `%APPDATA%\npm`. Whether the gateway's new PATH reaches an MCP server start was not observed, because the app was not reinstalled.
+- **Left open:** how the installed copy gets the new agent files (dashboard Update or Sync, or an uninstall that withdraws the trust grant).
+
+## Checks after the update
+
+1. `Get-Content $env:USERPROFILE\.kiro\agents\night-shift--warden.json` shows `allowedTools` with `@night-shift:shift/validate` and `toolsSettings.subagent`, and the other three files show their `allowedTools`.
+2. `kirocrew agent validate ./agents` reports 0 problems.
+3. `kirocrew chat --agent night-shift--warden -m "Run the Night Shift patrol with home D:\kiroween 2026\night-shift. Limit this run to at most 2 fixes."` with nobody at the keyboard. Save the output to `docs/patrol-transcripts/<date>-patrol-2.md`, removing only the Crew SECURITY warning lines.

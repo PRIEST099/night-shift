@@ -6,6 +6,7 @@ import type { Ctx } from './commands/ctx.js'
 import type { Deps } from './commands/audit.js'
 import { runAudit } from './commands/audit.js'
 import { runDiff } from './commands/diff.js'
+import { runMcp } from './commands/mcp.js'
 import { runPatrol } from './commands/patrol.js'
 import { runReport } from './commands/report.js'
 import { runValidate } from './commands/validate.js'
@@ -23,6 +24,7 @@ Commands:
   workdir <site> <haunting-id> --patrol-id <id> [--attempt <n>]
   report [--patrol-id <id>] [--publish-ui]
   patrol --no-agents [--publish-ui]
+  mcp    (stdio MCP server: validate, audit, diff, workdir, verify, report, list_source, read_source, write_fix_file)
 
 Every command also takes --home <dir>: the repository directory. Without it, NIGHT_SHIFT_HOME, then the working directory.
 
@@ -86,6 +88,10 @@ export async function runCli(rawArgv: string[], baseCtx: Ctx, deps: Deps = {}): 
             deps
           )
         ).code
+      }
+      case 'mcp': {
+        parseFlags(rest, [])
+        return await runMcp(ctx, deps)
       }
       case undefined:
       case '--help':

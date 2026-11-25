@@ -33,7 +33,8 @@ describe.skipIf(gate.skip)('the Night Shift MCP tools against the real THE UNSEE
       const id = planted!.id
 
       const first = (await call('workdir', { site: 'cursed-shop', hauntingId: id, patrolId: PATROL })).body.workdir as string
-      expect((await call('read_source', { site: 'cursed-shop', workdir: first, path: 'index.html' })).body.content).toContain('subscribe-sparkle')
+      // index.html is larger than one read_source reply, so look for the region first.
+      expect((await call('find_in_source', { site: 'cursed-shop', workdir: first, path: 'index.html', query: 'subscribe-sparkle' })).body.totalMatches).toBeGreaterThanOrEqual(1)
       const bad = readFileSync(path.join(repoRoot, 'demo', 'bad-fix', 'index.html'), 'utf8')
       await call('write_fix_file', { workdir: first, path: 'index.html', content: bad })
       const rejected = await call('verify', { site: 'cursed-shop', workdir: first, hauntingId: id, apply: true })

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { ConfineError, resolveInside } from '../io/confine.js'
 import { isProbablyBinary, listFiles } from '../io/copy-dir.js'
 import { normalizeRelative } from '../pure/confine.js'
+import { DEFAULT_FIND_CONTEXT, findInText, MAX_FIND_CONTEXT, MAX_FIND_MATCHES, MAX_READ_CHARS, replaceUnique, sliceLines } from '../pure/source-text.js'
 import { isValidPatrolId } from '../pure/patrol-id.js'
 import { resolveHome } from '../pure/home.js'
 import type { Patrol, Site } from '../pure/schema.js'
@@ -22,6 +23,7 @@ import { DEFAULT_WORK_ROOT, runWorkdir } from './workdir.js'
 export const MAX_READ_BYTES = 256 * 1024
 export const MAX_WRITE_BYTES = 512 * 1024
 export const MAX_LISTED_FILES = 500
+export { MAX_READ_CHARS } from '../pure/source-text.js'
 
 type Json = Record<string, unknown>
 type ToolResult = { content: { type: 'text'; text: string }[]; isError?: boolean }
@@ -228,22 +230,67 @@ export function createNightShiftServer(options: ServerOptions = {}): McpServer {
       })()
   )
 
+  /** Read a text file below `root` for read_source and find_in_source: confined, size-capped, not binary. */
+  const readText = (root: string, rel: string): string => {
+    const file = resolveInside(root, rel)
+    if (!existsSync(file) || !statSync(file).isFile()) throw new Error(`not a file: ${rel}`)
+    if (statSync(file).size > MAX_READ_BYTES) throw new Error(`file is larger than ${MAX_READ_BYTES} bytes`)
+    const buf = readFileSync(file)
+    if (isProbablyBinary(buf)) throw new Error('file is binary')
+    return buf.toString('utf8')
+  }
+
   server.registerTool(
     'read_source',
     {
-      description: "Read one text file inside a site's source directory (or inside one of its work directories, when workdir is given). Rejects `..`, absolute paths and symlinks out of the tree.",
-      inputSchema: { home: homeArg, site: z.string(), path: z.string(), workdir: z.string().optional() },
+      description: `Read one text file inside a site's source directory (or inside one of its work directories, when workdir is given). Rejects \`..\`, absolute paths and symlinks out of the tree. One call returns at most ${MAX_READ_CHARS} characters, cut at a line boundary. For a larger file, find the region with find_in_source, then pass startLine and endLine (1-based, inclusive); a cut reply has truncated true and nextStartLine.`,
+      inputSchema: { home: homeArg, site: z.string(), path: z.string(), workdir: z.string().optional(), startLine: z.number().int().min(1).optional(), endLine: z.number().int().min(1).optional() },
     },
     async (a) =>
       guard(() => {
         const c = capture(env, cwd, a.home)
         const root = readRoot(c, a.site, a.workdir)
-        const file = resolveInside(root, a.path)
-        if (!existsSync(file) || !statSync(file).isFile()) throw new Error(`not a file: ${a.path}`)
-        if (statSync(file).size > MAX_READ_BYTES) throw new Error(`file is larger than ${MAX_READ_BYTES} bytes`)
-        const buf = readFileSync(file)
-        if (isProbablyBinary(buf)) throw new Error('file is binary')
-        return reply({ ok: true, path: a.path, content: buf.toString('utf8') })
+        const text = readText(root, a.path)
+        const s = sliceLines(text, a.startLine, a.endLine)
+        return reply({ ok: true, path: a.path, content: s.content, startLine: s.startLine, endLine: s.endLine, totalLines: s.totalLines, truncated: s.truncated, ...(s.nextStartLine !== undefined ? { nextStartLine: s.nextStartLine } : {}) })
+      })()
+  )
+
+  server.registerTool(
+    'find_in_source',
+    {
+      description: `Find text in one file of a site's source directory (or of one of its work directories, when workdir is given). Use the haunting's htmlSnippet or a class name as the query. Returns at most ${MAX_FIND_MATCHES} matches, each with its line number and a few numbered lines of context. Exact, case-sensitive.`,
+      inputSchema: { home: homeArg, site: z.string(), path: z.string(), query: z.string(), context: z.number().int().min(0).max(MAX_FIND_CONTEXT).optional().describe(`Lines of context on each side. Default ${DEFAULT_FIND_CONTEXT}.`), workdir: z.string().optional() },
+    },
+    async (a) =>
+      guard(() => {
+        const c = capture(env, cwd, a.home)
+        const root = readRoot(c, a.site, a.workdir)
+        const r = findInText(readText(root, a.path), a.query, a.context)
+        return reply({ ok: true, path: a.path, totalMatches: r.totalMatches, truncated: r.truncated, matches: r.matches })
+      })()
+  )
+
+  server.registerTool(
+    'edit_fix_file',
+    {
+      description: 'Replace one exact piece of text in a file inside a work directory that the workdir tool created. oldText must match exactly once; if it is missing or matches more than once, nothing changes and the call fails. Reports the line changed. Rejects `..`, absolute paths and symlinks out of that directory.',
+      inputSchema: { home: homeArg, workdir: z.string(), path: z.string(), oldText: z.string(), newText: z.string() },
+    },
+    async (a) =>
+      guard(() => {
+        const c = capture(env, cwd, a.home)
+        const patrol = loadPatrol(c.ctx)
+        if (!patrol) throw new Error(c.err.join('\n'))
+        const dir = resolveWorkdir(c.ctx.cwd, patrol, a.workdir)
+        const text = readText(dir, a.path)
+        const file = resolveInside(dir, a.path)
+        const r = replaceUnique(text, a.oldText, a.newText)
+        if (!r.ok) return fail(r.message, { reason: r.reason, matches: r.count })
+        const bytes = Buffer.byteLength(r.text, 'utf8')
+        if (bytes > MAX_WRITE_BYTES) throw new Error(`the edited file would be larger than ${MAX_WRITE_BYTES} bytes`)
+        writeFileSync(file, r.text, 'utf8')
+        return reply({ ok: true, path: posix(path.relative(dir, file)), line: r.line, endLine: r.endLine, bytes })
       })()
   )
 

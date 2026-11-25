@@ -49,7 +49,7 @@ describe('agents', () => {
     for (const n of ['seer', 'scribe', 'exorcist']) expect(w.prompt).toContain(`\`${n}\``)
     expect(w.prompt).toMatch(/never edit source/i)
     expect(w.prompt).toMatch(/at most 2 fixes/)
-    for (const t of w.tools) expect(t).not.toMatch(/write_fix_file|read_source|workdir|verify|audit/)
+    for (const t of w.tools) expect(t).not.toMatch(/write_fix_file|edit_fix_file|find_in_source|read_source|workdir|verify|audit/)
   })
 
   test('the Seer, Scribe and Exorcist keep THE UNSEEN tools, named as Crew mounts the app server', () => {
@@ -74,7 +74,7 @@ describe('agents', () => {
 
   test('the Scribe drafts in a work directory, and its prompt forbids overlays, scripts and aria-hidden', () => {
     const s = agents.get('scribe')!
-    expect(s.tools.filter((t) => t.startsWith('@night-shift:shift/')).sort()).toEqual(['diff', 'list_source', 'read_source', 'workdir', 'write_fix_file'].map((t) => `@night-shift:shift/${t}`).sort())
+    expect(s.tools.filter((t) => t.startsWith('@night-shift:shift/')).sort()).toEqual(['diff', 'edit_fix_file', 'find_in_source', 'list_source', 'read_source', 'workdir', 'write_fix_file'].map((t) => `@night-shift:shift/${t}`).sort())
     expect(s.prompt).toMatch(/`workdir`/)
     expect(s.prompt).toMatch(/overlay/i)
     expect(s.prompt).toMatch(/script/i)
@@ -83,8 +83,8 @@ describe('agents', () => {
     expect(s.prompt).toMatch(/outside your work directory/)
   })
 
-  test('only the Scribe has write_fix_file', () => {
-    for (const [name, a] of agents) expect(a.tools.includes('@night-shift:shift/write_fix_file'), name).toBe(name === 'scribe')
+  test('only the Scribe has write_fix_file, edit_fix_file and find_in_source', () => {
+    for (const tool of ['write_fix_file', 'edit_fix_file', 'find_in_source']) for (const [name, a] of agents) expect(a.tools.includes('@night-shift:shift/' + tool), ` `).toBe(name === 'scribe')
   })
 
   test('every specialist prompt reads REPO from the Warden message and passes it as home', () => {

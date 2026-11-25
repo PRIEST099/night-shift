@@ -32,10 +32,10 @@ flowchart LR
 | --- | --- | --- |
 | Warden (lead) | Validates `patrol.yaml`, runs the others one step at a time as native sub-agents, writes the morning report. Never edits source. | sub-agent tool, `validate`, `report` |
 | Seer | Runs `audit` and `diff` for one site and returns the `workList`: new or worsened Wraith and Restless hauntings only. | `audit`, `diff`, `@night-shift:unseen/explain_haunting` |
-| Scribe | Gets one haunting, makes a work directory copy, drafts a minimal source fix. Never adds an overlay or script, never hides a problem with `aria-hidden`. | `workdir`, `diff`, `list_source`, `read_source`, `write_fix_file`, `@night-shift:unseen/explain_haunting` and `suggest_fix` |
+| Scribe | Gets one haunting, makes a work directory copy, drafts a minimal source fix. Never adds an overlay or script, never hides a problem with `aria-hidden`. | `workdir`, `diff`, `list_source`, `find_in_source`, `read_source`, `edit_fix_file`, `write_fix_file`, `@night-shift:unseen/explain_haunting` and `suggest_fix` |
 | Exorcist | Runs `verify`. Keeps the fix only if the haunting is gone and no new one appeared. Never edits source. | `verify`, `@night-shift:unseen/explain_haunting` |
 
-No agent has a shell or a file tool. Every step goes through the Night Shift MCP server (`night-shift mcp`, mounted by Crew as `@night-shift:shift`), which calls the same code as the CLI. Every tool takes `home` (the repository root, else `NIGHT_SHIFT_HOME`). Paths are confined: `..`, absolute paths and symlinks out of the tree are rejected, `read_source` and `list_source` read only inside the site's `source` directory (or inside a work directory, when `workdir` is passed), and `write_fix_file` writes only inside a directory that `workdir` created.
+No agent has a shell or a file tool. Every step goes through the Night Shift MCP server (`night-shift mcp`, mounted by Crew as `@night-shift:shift`), which calls the same code as the CLI. Every tool takes `home` (the repository root, else `NIGHT_SHIFT_HOME`). Paths are confined: `..`, absolute paths and symlinks out of the tree are rejected, `read_source` and `list_source` read only inside the site's `source` directory (or inside a work directory, when `workdir` is passed), `read_source` returns at most 16,000 characters per call (use `find_in_source` and a `startLine` / `endLine` range for larger pages), and `edit_fix_file` and `write_fix_file` write only inside a directory that `workdir` created.
 
 After a reject the Warden gives the Scribe the Exorcist's reasons for one more attempt. The limit is 2 attempts per haunting. Fixes run one at a time so each starts from the previous kept fix.
 
@@ -134,7 +134,7 @@ A site has either `serve.dir` (with `source`) or `baseUrl`. `night-shift validat
 | `night-shift verify <site> <fixDir> --haunting id [--base dir] [--apply]` | Audits base and fix, keeps or rejects, writes a fix record. `--apply` copies kept files into `fixedDir`. | 0 keep, 3 reject, 1 error |
 | `night-shift report [--patrol-id id] [--publish-ui]` | Writes `REPORT.md` and `report.json`. | 0, 1 |
 | `night-shift patrol --no-agents` | `validate`, `audit`, `diff` and `report` with no fixes. | 0 completed, 1 error |
-| `night-shift mcp` | Stdio MCP server for the crew: `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `read_source`, `write_fix_file`. | runs until the client closes |
+| `night-shift mcp` | Stdio MCP server for the crew: `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `find_in_source`, `read_source`, `edit_fix_file`, `write_fix_file`. | runs until the client closes |
 
 Every command takes `--home <dir>`, the repository directory. Without it the CLI uses `NIGHT_SHIFT_HOME`, then the working directory. Relative paths in `patrol.yaml` and the default THE UNSEEN path resolve against that directory.
 

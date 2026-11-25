@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync } from 'node:fs'
 import path from 'node:path'
 import { z } from 'zod'
 import { writeJsonAtomic } from './fs-atomic.js'
@@ -90,3 +90,22 @@ export function readCurrentHistory(root: string, site: string, patrolId: string 
   return undefined
 }
 
+
+export const ARCHIVE_DIR = 'history-archive'
+
+/**
+ * Move the newest timestamp history file of the site into `.night-shift/history-archive/<site>/`, so that the next
+ * patrol compares against the patrol before it. Nothing is deleted; an existing archive file is never overwritten.
+ * Returns the moved patrol id, or undefined when the site has no history.
+ */
+export function archiveNewestHistory(root: string, site: string): { patrolId: string; to: string } | undefined {
+  const ids = listPatrolIds(root, site)
+  const patrolId = ids[ids.length - 1]
+  if (patrolId === undefined) return undefined
+  const dest = path.join(root, STATE_DIR, ARCHIVE_DIR, site)
+  mkdirSync(dest, { recursive: true })
+  let to = path.join(dest, `${patrolId}.json`)
+  for (let n = 1; existsSync(to); n++) to = path.join(dest, `${patrolId}.${n}.json`)
+  renameSync(historyPath(root, site, patrolId), to)
+  return { patrolId, to }
+}

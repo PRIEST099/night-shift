@@ -12,7 +12,10 @@
     "test": "vitest --run",
     "test:integration": "vitest --run --config vitest.int.config.ts",
     "build:ui": "vite build --config ui/vite.config.ts",
-    "demo:reject": "node scripts/demo-reject.mjs"
+    "demo:reject": "node scripts/demo-reject.mjs",
+    "demo:regress": "node scripts/demo-regress.mjs",
+    "demo:reset": "node scripts/demo-reset.mjs",
+    "demo:rebaseline": "node scripts/demo-rebaseline.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

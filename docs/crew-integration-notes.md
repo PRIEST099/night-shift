@@ -9,7 +9,7 @@ The owner chose to run the crew through MCP tools only and to change no global C
 
 Done and checked here:
 
-- `night-shift mcp` exposes `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `read_source` and `write_fix_file`. Each tool calls the existing command code. Each takes `home`, else `NIGHT_SHIFT_HOME`, else the working directory. Paths go through `src/pure/confine.ts` (normalization) and `src/io/confine.ts` (symlink check against the real path). `tests/confine.test.ts` has the property tests, `tests/mcp.test.ts` calls every tool through an in-memory MCP client, and `tests/mcp.int.test.ts` runs audit, diff, workdir, write, a rejected verify, a kept verify and report against the real THE UNSEEN server.
+- `night-shift mcp` exposes `validate`, `audit`, `diff`, `workdir`, `verify`, `report`, `list_source`, `find_in_source`, `read_source`, `edit_fix_file` and `write_fix_file`. A Crew tool reply is limited to 30,000 characters, so `read_source` returns at most 16,000 characters per call and takes `startLine` / `endLine`, and the Scribe finds a region with `find_in_source` and changes it with `edit_fix_file` (an exact, unique replacement) instead of reading and rewriting a whole page. Each tool calls the existing command code. Each takes `home`, else `NIGHT_SHIFT_HOME`, else the working directory. Paths go through `src/pure/confine.ts` (normalization) and `src/io/confine.ts` (symlink check against the real path). `tests/confine.test.ts` has the property tests, `tests/mcp.test.ts` calls every tool through an in-memory MCP client, and `tests/mcp.int.test.ts` runs audit, diff, workdir, write, a rejected verify, a kept verify and report against the real THE UNSEEN server.
 - A real stdio start of the installed bin (`night-shift.cmd mcp`, resolved from `%APPDATA%\npm`) answered `validate`.
 - `app.json` declares the server as `shift`: `{"command": "night-shift", "args": ["mcp"]}`. Crew mounts it as `night-shift:shift`, so agents name tools `@night-shift:shift/<tool>`. THE UNSEEN stays `@night-shift:unseen/...`.
 - Each agent lists exactly its role's tools in `tools` and in `allowedTools`. No agent has `read`, `write`, `shell` or `@kirocrew-core`. The Warden has the `subagent` tool and `toolsSettings.subagent.availableAgents` and `trustedAgents` set to `seer`, `scribe`, `exorcist`. The three specialists carry no `toolsSettings`, because `acp/kas_subagent_targets.py` refuses a target with a shell `denyByDefault` or a write `fallbackAction: "deny"` (12-18, `_gate_only_limits`).
@@ -78,3 +78,28 @@ So the repository location is explicit. The CLI resolves paths against `--home`,
 1. `Get-Content $env:USERPROFILE\.kiro\agents\night-shift--warden.json` shows `allowedTools` with `@night-shift:shift/validate` and `toolsSettings.subagent`, and the other three files show their `allowedTools`.
 2. `kirocrew agent validate ./agents` reports 0 problems.
 3. `kirocrew chat --agent night-shift--warden -m "Run the Night Shift patrol with home D:\kiroween 2026\night-shift. Limit this run to at most 2 fixes."` with nobody at the keyboard. Save the output to `docs/patrol-transcripts/<date>-patrol-2.md`, removing only the Crew SECURITY warning lines.
+
+## Live report on the Morning page (run 51): findings, nothing implemented
+
+Question: can the page read the newest `report.json` at runtime, with no exec backend and no change that needs the owner? Read only, Crew 0.13.1. `K` = `C:\Program Files\KiroCrew\resources\backend-dist\kirocrew-backend\Lib\site-packages\kiro_crew`.
+
+**Answer: a mechanism exists, but using it through the SDK needs an owner approval. So nothing was implemented.** The page still shows the bundled `ui/src/last-report.json`.
+
+### What exists
+
+1. **A JSON file served from the installed copy.** `GET /apps/{name}/ui/{path}` serves any file under `%USERPROFILE%\.kiro\crew\apps\night-shift\ui\` with a `.json` extension (`K\apps\routes_static.py` 42-59 extension list, 229 `ui_root = apps_dir() / name / "ui"`, 386-392 the handler). The route needs no token (376-377, "UNAUTHENTICATED ... token-auth bypass"). The installed copy holds `ui\dist\index.mjs`, so `ui\latest-report.json` would be served as `/apps/night-shift/ui/latest-report.json`. Limits: 8 MiB (92), regular file with one hard link (361).
+2. **App storage.** `K\apps\app_storage.py` 1-4 stores `~/.kiro/crew/apps/{app}/data/kv/{key}.json`. It is built only for an app backend, and only with `permissions.storage` (`K\apps\context.py` 307-310). I found no host route that reads it for a page. A page reaches `/api/apps/{app}/...` only through routes an app's own code registers (`K\apps\route_registry.py` 165), which means a backend.
+3. **No other documented data route.** `AppApi` (`useAppApi`) is a plain same-origin `fetch` that first checks the path against `permissions.api` (`K\static\dist\assets\useIssues-DAgN_nb-.js`, line 2, functions `_`, `v`, `b`; the `AppApi` type is in `K\static\dist\vendor\kirocrew-app-sdk.d.ts`).
+
+### Why it needs the owner
+
+`useAppApi().get('/apps/night-shift/ui/latest-report.json')` throws `AppApiPermissionError` unless that path is in the app's approved `permissions.api`. An entry that a Sync adds is **declared but not approved**: `_approved_grants_after_manifest_change` keeps only entries the owner already approved (`K\apps\manager_records.py` 1059-1092), `_held_back_entries` lists the rest (1095-1109), and `staged_app_grants` returns only approved ones to the enforcement points (1234-1283). The owner's approvals live where the app cannot write (`K\apps\protected_app_state.py` 9-12). Approving a held-back entry is a grant on the app's detail page.
+
+A bare `fetch('/apps/night-shift/ui/latest-report.json')` from the page would skip that check. It was not used, because it sidesteps the permission the SDK is there to enforce.
+
+### What would be needed (owner's decision)
+
+1. `app.json`: add `"api": ["/apps/night-shift/ui/latest-report.json"]` under `permissions`.
+2. The owner presses **Sync** (Apps → Discover → Night Shift Crew → Sync), then approves the held-back API entry on the app's page.
+3. The `report` MCP tool writes `latest-report.json` (the validated report, same content as `report.json`) to `%USERPROFILE%\.kiro\crew\apps\night-shift\ui\`. That directory is Crew's install tree, outside this repository, and a Sync replaces it (`K\apps\manager_records.py` 1112-1114 moves the live tree aside), so the file would be missing until the next patrol. The owner decides whether Night Shift may write there, and the path would be an explicit setting such as `NIGHT_SHIFT_UI_PUBLISH_DIR`, not a guess.
+4. `ui/src/load-report.ts`: `useAppApi().get(...)`, parse it with the same `looksLikeReport` guard, and fall back to the bundled copy on any error.

@@ -6,7 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import fc from 'fast-check'
 import { afterEach, describe, expect, test } from 'vitest'
-import { createNightShiftServer } from '../src/commands/mcp.js'
+import { createNightShiftServer, MAX_READ_CHARS } from '../src/commands/mcp.js'
 import type { Deps } from '../src/commands/audit.js'
 import type { AuditPage } from '../src/io/mcp-client.js'
 
@@ -70,10 +70,10 @@ async function audited(t: T) {
 }
 
 describe('night-shift MCP server', () => {
-  test('lists exactly the nine tools, each with a home argument', async () => {
+  test('lists exactly the eleven tools, each with a home argument', async () => {
     const t = await setup()
     const { tools } = await t.client.listTools()
-    expect(tools.map((x) => x.name).sort()).toEqual(['audit', 'diff', 'list_source', 'read_source', 'report', 'validate', 'verify', 'workdir', 'write_fix_file'])
+    expect(tools.map((x) => x.name).sort()).toEqual(['audit', 'diff', 'edit_fix_file', 'find_in_source', 'list_source', 'read_source', 'report', 'validate', 'verify', 'workdir', 'write_fix_file'])
     for (const tool of tools) expect(Object.keys((tool.inputSchema as { properties: object }).properties), tool.name).toContain('home')
   })
 
@@ -241,6 +241,158 @@ describe('night-shift MCP server', () => {
     for (const where of [t.root, path.join(t.root, 'site'), path.join(t.root, 'demo'), path.dirname(t.root)]) expect(existsSync(path.join(where, 'pwn.txt')), where).toBe(false)
   })
 
+  test('read_source returns a ranged, capped slice of a page larger than the 30,000 character reply limit', async () => {
+    const t = await setup()
+    const rows = Array.from({ length: 1500 }, (_, i) => `<p class="row">row ${i} "quoted" text to make the page long</p>`)
+    writeFileSync(path.join(t.root, 'site', 'big.html'), `<html><body>\n${rows.join('\n')}\n<a href="#" class="late"></a>\n</body></html>\n`)
+    expect(readFileSync(path.join(t.root, 'site', 'big.html'), 'utf8').length).toBeGreaterThan(60_000)
+    const first = await t.call('read_source', { site: 'shop', path: 'big.html' })
+    expect(first.isError).toBe(false)
+    expect(first.body.truncated).toBe(true)
+    expect(first.body.content.length).toBeLessThanOrEqual(MAX_READ_CHARS)
+    expect(JSON.stringify(first.body).length).toBeLessThan(30_000)
+    expect(first.body.nextStartLine).toBe(first.body.endLine + 1)
+    const found = await t.call('find_in_source', { site: 'shop', path: 'big.html', query: '<a href="#" class="late"></a>', context: 1 })
+    expect(found.body.totalMatches).toBe(1)
+    const line = found.body.matches[0].line as number
+    expect(found.body.matches[0].text).toContain(`${line}: <a href="#" class="late">`)
+    const ranged = await t.call('read_source', { site: 'shop', path: 'big.html', startLine: line - 1, endLine: line + 1 })
+    expect(ranged.body).toMatchObject({ startLine: line - 1, endLine: line + 1, truncated: false })
+    expect(ranged.body.content).toContain('<a href="#" class="late"></a>')
+    expect((await t.call('read_source', { site: 'shop', path: 'big.html', startLine: 99999 })).isError).toBe(true)
+    expect((await t.call('read_source', { site: 'shop', path: 'big.html', startLine: 5, endLine: 2 })).isError).toBe(true)
+  })
+
+  test('find_in_source works on a work directory, is confined like read_source, and refuses an empty query', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const r = await t.call('find_in_source', { site: 'shop', workdir: w, path: 'index.html', query: 'class="spark"' })
+    expect(r.body).toMatchObject({ ok: true, totalMatches: 1 })
+    expect((await t.call('find_in_source', { site: 'shop', path: 'index.html', query: ' ' })).isError).toBe(true)
+    for (const bad of ['../secret.txt', path.join(t.root, 'secret.txt'), 'bin.dat', 'img']) {
+      const x = await t.call('find_in_source', { site: 'shop', path: bad, query: 'top' })
+      expect(x.isError, bad).toBe(true)
+      expect(JSON.stringify(x.body)).not.toContain('top secret')
+    }
+    expect((await t.call('find_in_source', { site: 'shop', workdir: 'site', path: 'index.html', query: 'a' })).isError).toBe(true)
+  })
+
+  test('edit_fix_file replaces one exact, unique piece of text in the work directory and reports the line', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const file = path.join(t.root, w, 'index.html')
+    writeFileSync(file, '<html>\n<body>\n<h1>x</h1>\n<a href="#" class="spark"></a>\n</body>\n</html>\n')
+    const ok = await t.call('edit_fix_file', { workdir: w, path: 'index.html', oldText: 'class="spark">', newText: 'class="spark" aria-label="Sparkle">' })
+    expect(ok.body).toMatchObject({ ok: true, path: 'index.html', line: 4, endLine: 4 })
+    expect(readFileSync(file, 'utf8')).toBe('<html>\n<body>\n<h1>x</h1>\n<a href="#" class="spark" aria-label="Sparkle"></a>\n</body>\n</html>\n')
+    expect(readFileSync(path.join(t.root, 'site', 'index.html'), 'utf8')).not.toContain('aria-label')
+    const v = await t.call('verify', { site: 'shop', workdir: w, hauntingId: id })
+    expect(v.body.decision).toBe('keep')
+  })
+
+  test('edit_fix_file fails and changes nothing when oldText is missing, ambiguous, empty or identical', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const file = path.join(t.root, w, 'index.html')
+    const original = '<p>a</p>\n<p>a</p>\n<a href="#" class="spark"></a>\n'
+    writeFileSync(file, original)
+    const cases: [string, string, string][] = [
+      ['missing', 'not in the file', 'x'],
+      ['ambiguous', '<p>a</p>', '<p>b</p>'],
+      ['empty', '', 'x'],
+      ['identical', '<a ', '<a '],
+    ]
+    for (const [reason, oldText, newText] of cases) {
+      const x = await t.call('edit_fix_file', { workdir: w, path: 'index.html', oldText, newText })
+      expect(x.isError, reason).toBe(true)
+      expect(x.body.reason, reason).toBe(reason)
+      expect(readFileSync(file, 'utf8'), reason).toBe(original)
+    }
+    expect((await t.call('edit_fix_file', { workdir: w, path: 'nope.html', oldText: 'a', newText: 'b' })).isError).toBe(true)
+    expect(existsSync(path.join(t.root, w, 'nope.html'))).toBe(false)
+  })
+
+  test('edit_fix_file rejects other directories, "..", absolute paths, a directory and a symlink out', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const source = readFileSync(path.join(t.root, 'site', 'index.html'), 'utf8')
+    const attempts: [string, string][] = [
+      ['site', 'index.html'],
+      ['.', 'index.html'],
+      [`demo/work/${PID}/never-created`, 'index.html'],
+      [`demo/work/${PID}/${id}/..`, 'index.html'],
+      [path.join(t.root, w), 'index.html'],
+      [w, '../../secret.txt'],
+      [w, '..\\..\\secret.txt'],
+      [w, path.join(t.root, 'secret.txt')],
+      [w, '/secret.txt'],
+      [w, ''],
+      [w, 'img'],
+    ]
+    for (const [workdir, p] of attempts) {
+      const x = await t.call('edit_fix_file', { workdir, path: p, oldText: 'top', newText: 'TOP' })
+      expect(x.isError, `${workdir} | ${p}`).toBe(true)
+    }
+    try {
+      symlinkSync(path.join(t.root, 'secret.txt'), path.join(t.root, w, 'link.txt'), 'file')
+      expect((await t.call('edit_fix_file', { workdir: w, path: 'link.txt', oldText: 'top', newText: 'TOP' })).isError).toBe(true)
+    } catch {
+      // no permission to create symlinks on this host
+    }
+    expect(readFileSync(path.join(t.root, 'secret.txt'), 'utf8')).toBe('top secret')
+    expect(readFileSync(path.join(t.root, 'site', 'index.html'), 'utf8')).toBe(source)
+  })
+
+  test('property: edit_fix_file changes the file only when oldText occurs exactly once, and then only there', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const file = path.join(t.root, w, 'index.html')
+    const piece = fc.constantFrom('<p>', '</p>', 'a', 'b', ' ', '\n', '"', 'class=', 'x')
+    const text = fc.array(piece, { minLength: 0, maxLength: 30 }).map((p) => p.join(''))
+    const occurrences = (h: string, n: string): number => h.split(n).length - 1
+    await fc.assert(
+      fc.asyncProperty(text, text, text, async (content, oldText, newText) => {
+        writeFileSync(file, content)
+        const r = await t.call('edit_fix_file', { workdir: w, path: 'index.html', oldText, newText })
+        const after = readFileSync(file, 'utf8')
+        if (oldText !== '' && oldText !== newText && occurrences(content, oldText) === 1) {
+          expect(r.isError).toBe(false)
+          expect(after).toBe(content.replace(oldText, () => newText))
+        } else {
+          expect(r.isError).toBe(true)
+          expect(after).toBe(content)
+        }
+        expect(readFileSync(path.join(t.root, 'site', 'index.html'), 'utf8')).toContain('class="spark"')
+        return true
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  test('property: no path argument can make edit_fix_file or find_in_source touch a file outside its tree', async () => {
+    const t = await setup()
+    const id = await audited(t)
+    const w = (await t.call('workdir', { site: 'shop', hauntingId: id, patrolId: PID })).body.workdir as string
+    const sep = fc.constantFrom('/', '\\')
+    const nasty = fc
+      .array(fc.tuple(fc.constantFrom('..', '.', 'a', 'img', '', 'C:'), sep), { minLength: 1, maxLength: 5 })
+      .map((parts) => parts.map(([s, p]) => s + p).join('') + 'secret.txt')
+    await fc.assert(
+      fc.asyncProperty(nasty, async (p) => {
+        await t.call('edit_fix_file', { workdir: w, path: p, oldText: 'top', newText: 'TOP' })
+        const found = await t.call('find_in_source', { site: 'shop', path: p, query: 'top' })
+        expect(JSON.stringify(found.body)).not.toContain('top secret')
+        return true
+      }),
+      { numRuns: 100 }
+    )
+    expect(readFileSync(path.join(t.root, 'secret.txt'), 'utf8')).toBe('top secret')
+  })
   test('verify keeps a good fix, applies it, and returns the decision and the record', async () => {
     const t = await setup()
     const id = await audited(t)

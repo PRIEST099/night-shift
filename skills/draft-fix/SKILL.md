@@ -5,7 +5,7 @@ description: Choose and write one minimal source fix for one accessibility haunt
 
 # Draft a fix
 
-Work only inside the directory returned by the `workdir` tool (`night-shift workdir <site> <haunting-id> --patrol-id <id>`). Read it with `read_source` (pass `workdir`) and write it with `write_fix_file`, which refuses any other place. Make the smallest source change that removes the haunting. Use the `night-shift` tools for anything deterministic; do not write your own audit.
+Work only inside the directory returned by the `workdir` tool (`night-shift workdir <site> <haunting-id> --patrol-id <id>`). Do not read a whole page: real pages can be larger than the 30,000 character limit of a tool reply. Find the region with `find_in_source` (the haunting's htmlSnippet or class name as `query`), read it with `read_source` and `startLine` / `endLine` (pass `workdir`), and change it with `edit_fix_file` (an exact `oldText` that matches once, and the `newText`). `edit_fix_file` and `write_fix_file` refuse any place outside the work directory; use `write_fix_file` only for a small new file. Make the smallest source change that removes the haunting. Use the `night-shift` tools for anything deterministic; do not write your own audit.
 
 ## Choose the fix by type
 

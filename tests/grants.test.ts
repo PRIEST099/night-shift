@@ -27,7 +27,7 @@ const get = (name: string) => agents.get(name)!
 const EXPECTED_ALLOWED_TOOLS: Record<string, string[]> = {
   warden: ['@night-shift:shift/validate', '@night-shift:shift/report'],
   seer: ['@night-shift:shift/audit', '@night-shift:shift/diff', '@night-shift:unseen/explain_haunting'],
-  scribe: ['@night-shift:shift/workdir', '@night-shift:shift/diff', '@night-shift:shift/list_source', '@night-shift:shift/read_source', '@night-shift:shift/write_fix_file', '@night-shift:unseen/explain_haunting', '@night-shift:unseen/suggest_fix'],
+  scribe: ['@night-shift:shift/workdir', '@night-shift:shift/diff', '@night-shift:shift/list_source', '@night-shift:shift/read_source', '@night-shift:shift/find_in_source', '@night-shift:shift/edit_fix_file', '@night-shift:shift/write_fix_file', '@night-shift:unseen/explain_haunting', '@night-shift:unseen/suggest_fix'],
   exorcist: ['@night-shift:shift/verify', '@night-shift:unseen/explain_haunting'],
 }
 

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Test Gate",
+      "description": "Runs npm test when the agent finishes and blocks the end of the turn if tests fail. Skips the run if nothing under src/, ui/src/, agents/, skills/ or app.json changed since the last pass.",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "node .kiro/hooks/scripts/test-gate.mjs",
+        "timeout": 300
+      }
+    }
+  ]
+}

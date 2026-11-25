@@ -1,0 +1,13 @@
+version: 1
+maxFixesPerSite: 5
+sites:
+  - name: cursed-shop
+    owner: demo-team
+    serve:
+      dir: demo/cursed-shop-copy
+    source: demo/cursed-shop-copy
+    fixedDir: demo/cursed-shop-fixed
+    pages:
+      - /index.html
+      - /product.html
+      - /checkout.html

@@ -1,0 +1,674 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "20261125T154231Z",
+  "generatedAt": "2026-11-25T15:48:35.382Z",
+  "sites": [
+    {
+      "name": "cursed-shop",
+      "owner": "demo-team",
+      "scoreBefore": 84.3,
+      "scoreAfter": 84.3,
+      "scoreChange": 0,
+      "newCount": 91,
+      "worsenedCount": 0,
+      "resolvedCount": 0,
+      "fixes": [
+        {
+          "hauntingId": "index-html-NamelessSpirit-d3eefb7e",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "decision": "kept",
+          "reasons": [],
+          "attempts": 2,
+          "changedFiles": [
+            "index.html"
+          ],
+          "origin": "recorded-attempt",
+          "earlierAttempts": [
+            {
+              "attempt": 1,
+              "decision": "rejected",
+              "reasons": [
+                "new-haunting: TheVeiled on /index.html, 1 before and 2 after: <button type=\"button\" class=\"sparkle-link subscribe-sparkle\" aria-hidden=\"true\" onclick=\"document.getElementById('products').scrollIntoView()\"><img src=\"img/sparkle.svg\" alt=\"\" class=\"sparkle\" width=\"24\" height=\"24\"></button>"
+              ]
+            }
+          ]
+        }
+      ],
+      "notAttempted": [
+        {
+          "hauntingId": "index-html-NamelessSpirit-dbf2d295",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-09f1cb78",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-478bb10d",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-4e0a940f",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "in the work list, no fix record"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-46b7439f",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "in the work list, no fix record"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-3f8d23a7",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "in the work list, no fix record"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-dbba5d8a",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "in the work list, no fix record"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-ce7af3f9",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-NamelessSpirit-f437cf3b",
+          "type": "NamelessSpirit",
+          "severity": "Wraith",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-6f195bbc",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-facbb9c8",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-df82e1dc",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-d09f6648",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-71f354ef",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-2a097e1b",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-071d6844",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-LostSoul-91d44fe7",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-HollowPortrait-305934d6",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-HollowPortrait-31c074fb",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-HollowPortrait-223cfe0d",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-HollowPortrait-725dec6d",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheVeiled-042c20eb",
+          "type": "TheVeiled",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-400e34cb",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-e101498c",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-41d34657",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-aff2aff1",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-3edb30d2",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-55a32591",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-6c6bb2b6",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-cfccfbc3",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-71736992",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-795c85d8",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-f22abfd8",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-0636fe61",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-ede81f70",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-849ad3d1",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-a3c71155",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-504862b1",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-26c4c687",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-InvisibleWanderer-ba76a501",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-05bb8874",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-fe1735d2",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-76ef46ef",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-e43d00a8",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-9544b51b",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-49f5c754",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "index-html-TheFog-b5798c8f",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/index.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-NamelessSpirit-dbf2d295",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-NamelessSpirit-09f1cb78",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-NamelessSpirit-478bb10d",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-7e5cbad2",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-20694952",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-4827f417",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-1de8f791",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-8d0d7236",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-cec17add",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-a2516120",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-c0a1c12a",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-8a0c008c",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-LostSoul-24ffcb7e",
+          "type": "LostSoul",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-HollowPortrait-d40521af",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-HollowPortrait-ac151cbc",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-HollowPortrait-66a12a64",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-HollowPortrait-d6717f5b",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-400e34cb",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-e101498c",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-41d34657",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-aff2aff1",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-3edb30d2",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-InvisibleWanderer-55a32591",
+          "type": "InvisibleWanderer",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-TheFog-73c0867f",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-TheFog-847aaaaf",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-TheFog-5101e1f2",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-TheFog-b5798c8f",
+          "type": "TheFog",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "product-html-ShatteredOrder-7bdd8d2d",
+          "type": "ShatteredOrder",
+          "severity": "Restless",
+          "page": "/product.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-CursedLoop-3d43c1e9",
+          "type": "CursedLoop",
+          "severity": "Wraith",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-NamelessSpirit-dbf2d295",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-NamelessSpirit-09f1cb78",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-NamelessSpirit-478bb10d",
+          "type": "NamelessSpirit",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-WhisperingField-3973ebee",
+          "type": "WhisperingField",
+          "severity": "Wraith",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-WhisperingField-884b3a1a",
+          "type": "WhisperingField",
+          "severity": "Wraith",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-HollowPortrait-9fcfac80",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-HollowPortrait-33ccbf91",
+          "type": "HollowPortrait",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-TheVeiled-ccd05688",
+          "type": "TheVeiled",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-TheVeiled-82a7909c",
+          "type": "TheVeiled",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-TheFog-01849678",
+          "type": "TheFog",
+          "severity": "Banished",
+          "page": "/checkout.html",
+          "why": "Banished severity"
+        },
+        {
+          "hauntingId": "checkout-html-TheFog-c653665c",
+          "type": "TheFog",
+          "severity": "Banished",
+          "page": "/checkout.html",
+          "why": "Banished severity"
+        },
+        {
+          "hauntingId": "checkout-html-SilentTongue-c20529d3",
+          "type": "SilentTongue",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-ShatteredOrder-f573bf0a",
+          "type": "ShatteredOrder",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        },
+        {
+          "hauntingId": "checkout-html-ShatteredOrder-c80871b8",
+          "type": "ShatteredOrder",
+          "severity": "Restless",
+          "page": "/checkout.html",
+          "why": "beyond maxFixesPerSite (5)"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

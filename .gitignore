@@ -1,0 +1,7 @@
+node_modules
+/dist
+.night-shift/
+/REPORT.md
+/report.json
+demo/work/
+demo/cursed-shop-fixed/

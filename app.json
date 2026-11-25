@@ -1,0 +1,35 @@
+{
+  "name": "night-shift",
+  "version": "0.1.0",
+  "displayName": "Night Shift Crew",
+  "description": "A crew of four Kiro agents that patrols a list of websites overnight with THE UNSEEN, fixes new accessibility hauntings in a copy of the source, and writes a morning report.",
+  "author": "Night Shift contributors",
+  "license": "MIT",
+  "minKiroCrewVersion": "0.13.0",
+  "tags": ["accessibility", "a11y", "wcag", "audit", "patrol"],
+  "agents": ["agents/warden.json", "agents/seer.json", "agents/scribe.json", "agents/exorcist.json"],
+  "skills": ["skills/patrol", "skills/draft-fix", "skills/verify-fix"],
+  "mcpServers": {
+    "unseen": {
+      "command": "node",
+      "args": ["${UNSEEN_MCP_SERVER_JS:-../the-unseen/packages/mcp/dist/server.js}"],
+      "env": {
+        "UNSEEN_CHROMIUM_CHANNEL": "${UNSEEN_CHROMIUM_CHANNEL:-chromium}"
+      }
+    }
+  },
+  "crons": [
+    {
+      "name": "nightly-patrol",
+      "cron_expr": "0 2 * * *",
+      "message": "Run the Night Shift patrol from patrol.yaml and write the morning report.",
+      "agent": "warden",
+      "enabled": false
+    }
+  ],
+  "ui": {
+    "entry": "dist/index.mjs",
+    "pages": [{ "route": "/apps/night-shift", "label": "Morning report", "icon": "Moon" }]
+  }
+}
+

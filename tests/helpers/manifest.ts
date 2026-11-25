@@ -21,9 +21,9 @@ export const appSchema = z
     tags: z.array(z.string()).optional(),
     agents: z.array(z.string()).min(1),
     skills: z.array(z.string()).min(1),
-    mcpServers: z.record(z.object({ command: z.string(), args: z.array(z.string()), env: z.record(z.string()).optional() }).passthrough()),
+    mcpServers: z.record(z.object({ command: z.string(), args: z.array(z.string()).optional(), env: z.record(z.string()).optional() }).passthrough()),
     crons: z.array(z.record(z.unknown())).optional(),
     ui: z.object({ entry: z.string(), pages: z.array(z.record(z.unknown())) }).passthrough().optional(),
-    permissions: z.object({ api: z.array(z.string()) }).passthrough().optional(),
+    permissions: z.object({ api: z.array(z.string()).optional(), cron: z.boolean().optional() }).passthrough().optional(),
   })
   .passthrough()

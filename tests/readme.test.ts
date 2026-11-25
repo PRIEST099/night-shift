@@ -26,7 +26,9 @@ describe('README', () => {
   test('every npm run script it mentions exists', () => {
     const mentioned = [...readme.matchAll(/npm run ([\w:-]+)/g)].map((m) => m[1]!)
     expect(mentioned.length).toBeGreaterThan(0)
-    for (const s of mentioned) expect(pkg.scripts[s], s).toBeTruthy()
+    // Scripts that live in the THE UNSEEN checkout, not in this package.
+    const foreign = new Set(['unseen:install-global'])
+    for (const s of mentioned) if (!foreign.has(s)) expect(pkg.scripts[s], s).toBeTruthy()
   })
 
   test('documents the server variable, unseen-mcp and the Crew install commands', () => {

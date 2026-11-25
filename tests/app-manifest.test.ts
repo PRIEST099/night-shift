@@ -1,4 +1,4 @@
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { MCP_DEFAULT_PATH, MCP_ENV_VAR } from '../src/io/mcp-client.js'
@@ -32,8 +32,12 @@ describe('app.json', () => {
     expect(existsSync(path.join(root, 'crew.yaml'))).toBe(false)
   })
 
-  test('permissions, if present, only holds api', () => {
-    if (app.permissions) expect(Object.keys(app.permissions)).toEqual(['api'])
+  test('permissions.cron is true whenever crons is non-empty', () => {
+    if ((app.crons ?? []).length > 0) expect(app.permissions?.cron).toBe(true)
+  })
+
+  test('app.json has no shell-style placeholder', () => {
+    expect(readFileSync(path.join(root, 'app.json'), 'utf8')).not.toContain('${')
   })
 
   test('every referenced agent file and skill folder exists', () => {
@@ -43,17 +47,17 @@ describe('app.json', () => {
     for (const s of app.skills) expect(existsSync(path.join(root, s, 'SKILL.md')), s).toBe(true)
   })
 
-  test('declares the unseen MCP server with the env variable and default path the CLI reads', () => {
+  test('declares the unseen MCP server as the global unseen-mcp bin with a literal chromium channel', () => {
     const unseen = app.mcpServers['unseen']!
-    expect(unseen.command).toBe('node')
-    expect(unseen.args).toEqual([`\${${MCP_ENV_VAR}:-${MCP_DEFAULT_PATH}}`])
-    expect(MCP_ENV_VAR).toBe('UNSEEN_MCP_SERVER_JS')
-    expect(MCP_DEFAULT_PATH).toBe('../the-unseen/packages/mcp/dist/server.js')
+    expect(unseen.command).toBe('unseen-mcp')
+    expect(unseen.args ?? []).toEqual([])
+    expect(unseen.env).toEqual({ UNSEEN_CHROMIUM_CHANNEL: 'chromium' })
   })
 
-  test('the default server path resolves relative to the repo root to the sibling checkout', () => {
-    const resolved = path.resolve(root, MCP_DEFAULT_PATH)
-    expect(resolved).toBe(path.resolve(root, '..', 'the-unseen', 'packages', 'mcp', 'dist', 'server.js'))
+  test('the CLI keeps its own env-or-sibling default for finding the server file', () => {
+    expect(MCP_ENV_VAR).toBe('UNSEEN_MCP_SERVER_JS')
+    expect(MCP_DEFAULT_PATH).toBe('../the-unseen/packages/mcp/dist/server.js')
+    expect(path.resolve(root, MCP_DEFAULT_PATH)).toBe(path.resolve(root, '..', 'the-unseen', 'packages', 'mcp', 'dist', 'server.js'))
     expect(statSync(root).isDirectory()).toBe(true)
   })
 

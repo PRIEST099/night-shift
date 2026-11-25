@@ -43,7 +43,18 @@ You need Node 22 or later, and THE UNSEEN built next to this repo: `../the-unsee
 
 Night Shift talks to THE UNSEEN through its MCP server. The server file is read from the environment variable **`UNSEEN_MCP_SERVER_JS`**. The default is `../the-unseen/packages/mcp/dist/server.js`, relative to this repo's root. If the file is missing, every command that audits exits 1 and names the variable.
 
-Alternative: install the package and point the variable at its server file. The `unseen-mcp` bin is a shim, and Night Shift starts the server with `node`, so use the real file:
+### Installing as a Crew app
+
+The Crew app starts THE UNSEEN as `unseen-mcp` from your PATH. Crew does not expand shell-style `${VAR:-default}` placeholders and copies the app into its own folder, so a relative path to `../the-unseen` cannot work there. Run this once, in the THE UNSEEN checkout:
+
+```
+npm run unseen:install-global
+unseen-mcp --help
+```
+
+Then `kirocrew app install <path to this repo>`. The `night-shift` CLI is separate and keeps its own lookup (`UNSEEN_MCP_SERVER_JS`, then the sibling path above).
+
+For the CLI only, an alternative: install the package and point the variable at its server file. The `unseen-mcp` bin is a shim, and Night Shift starts the server with `node`, so use the real file:
 
 ```
 npm install -g @the-unseen/mcp

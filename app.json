@@ -11,12 +11,14 @@
   "skills": ["skills/patrol", "skills/draft-fix", "skills/verify-fix"],
   "mcpServers": {
     "unseen": {
-      "command": "node",
-      "args": ["${UNSEEN_MCP_SERVER_JS:-../the-unseen/packages/mcp/dist/server.js}"],
+      "command": "unseen-mcp",
       "env": {
-        "UNSEEN_CHROMIUM_CHANNEL": "${UNSEEN_CHROMIUM_CHANNEL:-chromium}"
+        "UNSEEN_CHROMIUM_CHANNEL": "chromium"
       }
     }
+  },
+  "permissions": {
+    "cron": true
   },
   "crons": [
     {
